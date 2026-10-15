@@ -1,7 +1,8 @@
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../domain/comparison_item.dart';
 import '../../data/comparison_repository.dart';
+import '../../domain/comparison_item.dart';
 
 enum ComparisonViewMode {
   table,
@@ -15,6 +16,7 @@ class ComparisonState {
   final String? error;
   final bool showComparison;
   final int? selectedItemId;
+  final int? ayahId;
 
   const ComparisonState({
     this.isLoading = false,
@@ -23,6 +25,7 @@ class ComparisonState {
     this.error,
     this.showComparison = true,
     this.selectedItemId,
+    this.ayahId,
   });
 
   ComparisonState copyWith({
@@ -33,6 +36,9 @@ class ComparisonState {
     bool clearError = false,
     bool? showComparison,
     int? selectedItemId,
+    bool clearSelection = false,
+    int? ayahId,
+    bool clearAyah = false,
   }) {
     return ComparisonState(
       isLoading: isLoading ?? this.isLoading,
@@ -40,7 +46,9 @@ class ComparisonState {
       viewMode: viewMode ?? this.viewMode,
       error: clearError ? null : (error ?? this.error),
       showComparison: showComparison ?? this.showComparison,
-      selectedItemId: selectedItemId ?? this.selectedItemId,
+      selectedItemId:
+      clearSelection ? null : (selectedItemId ?? this.selectedItemId),
+      ayahId: clearAyah ? null : (ayahId ?? this.ayahId),
     );
   }
 }
@@ -50,23 +58,41 @@ class ComparisonCubit extends Cubit<ComparisonState> {
 
   ComparisonCubit(this.repository) : super(const ComparisonState());
 
-  Future<void> load() async {
-    emit(state.copyWith(isLoading: true, clearError: true));
+  Future<void> loadApprovedForAyah(int? ayahId) async {
+    if (ayahId == null) {
+      emit(state.copyWith(
+        isLoading: false,
+        items: const [],
+        clearSelection: true,
+        clearAyah: true,
+        clearError: true,
+      ));
+      return;
+    }
+
+    emit(state.copyWith(
+      isLoading: true,
+      ayahId: ayahId,
+      items: const [],
+      clearSelection: true,
+      clearError: true,
+    ));
 
     try {
-      final items = await repository.getDemoItems();
+      final items = await repository.getApprovedItemsForAyah(ayahId);
 
       emit(state.copyWith(
         isLoading: false,
         items: items,
-        selectedItemId:
-        items.isNotEmpty ? items.first.id : null,
+        selectedItemId: items.isEmpty ? null : items.first.id,
         clearError: true,
       ));
     } catch (e) {
+      if (isClosed || state.ayahId != ayahId) return;
+
       emit(state.copyWith(
         isLoading: false,
-        error: e.toString(),
+        error: 'تعذر تحميل أوجه القراءة المعتمدة: $e',
       ));
     }
   }
@@ -76,9 +102,7 @@ class ComparisonCubit extends Cubit<ComparisonState> {
   }
 
   void toggleComparison() {
-    emit(state.copyWith(
-      showComparison: !state.showComparison,
-    ));
+    emit(state.copyWith(showComparison: !state.showComparison));
   }
 
   void selectItem(int id) {

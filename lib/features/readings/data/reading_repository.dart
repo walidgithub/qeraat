@@ -1,3 +1,4 @@
+
 import '../../../core/database/app_database.dart';
 
 class ReadingRepository {
@@ -5,8 +6,6 @@ class ReadingRepository {
 
   ReadingRepository(this.database);
 
-  /// جلب أوجه القراءة التي اجتازت المراجعة
-  /// لآية محددة.
   Future<List<Map<String, Object?>>> getApprovedFormsForAyah(
       int ayahId,
       ) async {
@@ -43,19 +42,14 @@ class ReadingRepository {
         s.page_reference AS source_page
 
       FROM reading_variants v
-
       INNER JOIN variant_forms vf
         ON vf.variant_id = v.id
-
       INNER JOIN turuq t
         ON t.id = vf.tariq_id
-
       INNER JOIN riwayat r
         ON r.id = t.riwaya_id
-
       INNER JOIN qurras q
         ON q.id = r.qari_id
-
       INNER JOIN sources s
         ON s.id = v.source_id
 
@@ -63,7 +57,7 @@ class ReadingRepository {
         AND v.review_status = 'approved'
         AND s.review_status = 'approved'
 
-      ORDER BY q.order_no, r.id, t.id
+      ORDER BY q.order_no, r.id, t.id, v.id, vf.id
       ''',
       [ayahId],
     );
