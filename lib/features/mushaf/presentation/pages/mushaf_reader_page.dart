@@ -1,7 +1,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
+import '../widgets/quran_import_button.dart';
 import '../../../comparison/presentation/cubit/comparison_cubit.dart';
 import '../../../comparison/presentation/pages/comparison_page.dart';
 import '../cubit/mushaf_reader_cubit.dart';
@@ -23,6 +23,9 @@ class MushafReaderPage extends StatelessWidget {
       child: Scaffold(
         appBar: AppBar(
           title: const Text('بصائر القراءات'),
+          actions: const [
+            QuranImportButton(),
+          ],
         ),
         body: BlocBuilder<MushafReaderCubit, MushafReaderState>(
           builder: (context, state) {
