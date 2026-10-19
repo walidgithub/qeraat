@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/gestures.dart';
@@ -236,7 +235,10 @@ class _ReadingArea extends StatelessWidget {
           )
               : _SurahContent(
             state: state,
-            onAyahSelected: cubit.selectAyah,
+            selectedSurahName: state.surahName ?? '',
+            onAyahSelected: (ayah) {
+              context.read<MushafReaderCubit>().selectAyah(ayah);
+            },
           ),
         ),
       ],
@@ -278,7 +280,7 @@ class _SurahSelector extends StatelessWidget {
           Expanded(
             flex: 3,
             child: DropdownButtonFormField<int>(
-              value: selectedSurahExists ? state.surahId : null,
+              initialValue: selectedSurahExists ? state.surahId : null,
               isExpanded: true,
               decoration: InputDecoration(
                 labelText: 'اختر السورة',
@@ -300,7 +302,7 @@ class _SurahSelector extends StatelessWidget {
                 return DropdownMenuItem<int>(
                   value: id,
                   child: Text(
-                    '$name',
+                    name,
                     overflow: TextOverflow.ellipsis,
                   ),
                 );
@@ -312,7 +314,7 @@ class _SurahSelector extends StatelessWidget {
           Expanded(
             flex: 2,
             child: DropdownButtonFormField<int>(
-              value: selectedAyahExists ? state.ayahNumber : null,
+              initialValue: selectedAyahExists ? state.ayahNumber : null,
               isExpanded: true,
               decoration: InputDecoration(
                 labelText: 'اذهب إلى آية',
@@ -332,7 +334,7 @@ class _SurahSelector extends StatelessWidget {
 
                 return DropdownMenuItem<int>(
                   value: number,
-                  child: Text('$number'),
+                  child: Text(number.toString()),
                 );
               }).toList(),
               onChanged: state.ayahs.isEmpty ? null : onAyahChanged,
@@ -415,15 +417,12 @@ class _SurahContentState extends State<_SurahContent> {
         TextSpan(
           text: '$text ',
           recognizer: recognizer,
-          style: TextStyle(
-            color: isSelected
-                ? const Color(0xFF443182)
-                : const Color(0xFF211B18),
-            backgroundColor: isSelected
-                ? const Color(0xFFE8DDF8)
-                : Colors.transparent,
-            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-          ),
+            style: TextStyle(
+              color: isSelected
+                  ? const Color(0xFF443182)
+                  : const Color(0xFF211B18),
+              fontWeight: FontWeight.normal,
+            ),
         ),
       );
 
@@ -486,12 +485,12 @@ class _SurahContentState extends State<_SurahContent> {
               TextSpan(
                 style: const TextStyle(
                   fontFamily: 'Amiri',
-                  fontSize: 27,
-                  height: 2.1,
+                  fontSize: 20,
+                  height: 1.80,
                 ),
                 children: spans,
               ),
-              textAlign: TextAlign.justify,
+              textAlign: TextAlign.right,
               textDirection: TextDirection.rtl,
             ),
           ),
@@ -581,46 +580,5 @@ class _SurahHeader extends StatelessWidget {
         ],
       ),
     );
-  }
-}
-
-class _AyahNumber extends StatelessWidget {
-  final int number;
-
-  const _AyahNumber({required this.number});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 35,
-      height: 35,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: const Color(0xFFF4EBD8),
-        border: Border.all(
-          color: _goldColor,
-          width: 1.2,
-        ),
-      ),
-      child: Text(
-        _toArabicDigits(number),
-        style: const TextStyle(
-          color: _deepPurple,
-          fontSize: 13,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-    );
-  }
-
-  String _toArabicDigits(int value) {
-    const western = '0123456789';
-    const arabic = '٠١٢٣٤٥٦٧٨٩';
-
-    return value.toString().split('').map((digit) {
-      final index = western.indexOf(digit);
-      return index < 0 ? digit : arabic[index];
-    }).join();
   }
 }
