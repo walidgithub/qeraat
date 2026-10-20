@@ -364,6 +364,7 @@ class _SurahContent extends StatefulWidget {
 class _SurahContentState extends State<_SurahContent> {
   final List<TapGestureRecognizer> _recognizers = [];
 
+
   @override
   void didUpdateWidget(covariant _SurahContent oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -384,7 +385,27 @@ class _SurahContentState extends State<_SurahContent> {
   }
 
   String _getAyahText(Map<String, Object?> ayah) {
-    return ayah['uthmani_text']?.toString() ?? '';
+    final text = ayah['uthmani_text']?.toString() ?? '';
+    final surahId = widget.state.surahId;
+    final ayahNumber = (ayah['ayah_number'] as num).toInt();
+
+    // الفاتحة: نُبقي البسملة لأنها آية منها.
+    if (surahId == 1) return text;
+
+    // التوبة: لا نضيف بسملة في أولها.
+    if (surahId == 9) return text;
+
+    // إزالة البسملة من بداية الآية الأولى في العرض فقط.
+    if (ayahNumber == 1) {
+      return text.replaceFirst(
+        RegExp(
+          r'^بِسْمِ\s+اللَّهِ\s+الرَّحْمَـٰنِ\s+الرَّحِيمِ\s*',
+        ),
+        '',
+      );
+    }
+
+    return text;
   }
 
   String _arabicNumber(int number) {
@@ -471,7 +492,24 @@ class _SurahContentState extends State<_SurahContent> {
           name: widget.selectedSurahName,
           ayahCount: state.ayahs.length,
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 20),
+
+        if (state.surahId != 1 && state.surahId != 9) ...[
+          const Center(
+            child: Text(
+              'بِسْمِ اللَّهِ الرَّحْمَـٰنِ الرَّحِيمِ',
+              textDirection: TextDirection.rtl,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontFamily: 'Amiri',
+                fontSize: 27,
+                height: 2,
+                color: Color(0xFF211B18),
+              ),
+            ),
+          ),
+        ],
+
         Directionality(
           textDirection: TextDirection.rtl,
           child: Container(
