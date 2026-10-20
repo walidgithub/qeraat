@@ -56,44 +56,61 @@ class ComparisonState {
 class ComparisonCubit extends Cubit<ComparisonState> {
   final ComparisonRepository repository;
 
+  // يمنع طلبًا قديمًا من استبدال نتائج الآية الأحدث.
+  int _loadRequestId = 0;
+
   ComparisonCubit(this.repository) : super(const ComparisonState());
 
   Future<void> loadApprovedForAyah(int? ayahId) async {
+    final requestId = ++_loadRequestId;
+
     if (ayahId == null) {
-      emit(state.copyWith(
-        isLoading: false,
-        items: const [],
-        clearSelection: true,
-        clearAyah: true,
-        clearError: true,
-      ));
+      emit(
+        state.copyWith(
+          isLoading: false,
+          items: const [],
+          clearSelection: true,
+          clearAyah: true,
+          clearError: true,
+        ),
+      );
       return;
     }
 
-    emit(state.copyWith(
-      isLoading: true,
-      ayahId: ayahId,
-      items: const [],
-      clearSelection: true,
-      clearError: true,
-    ));
+    emit(
+      state.copyWith(
+        isLoading: true,
+        ayahId: ayahId,
+        items: const [],
+        clearSelection: true,
+        clearError: true,
+      ),
+    );
 
     try {
       final items = await repository.getApprovedItemsForAyah(ayahId);
 
-      emit(state.copyWith(
-        isLoading: false,
-        items: items,
-        selectedItemId: items.isEmpty ? null : items.first.id,
-        clearError: true,
-      ));
-    } catch (e) {
-      if (isClosed || state.ayahId != ayahId) return;
+      // تجاهل النتيجة لو بدأ تحميل أحدث أو أُغلق Cubit.
+      if (isClosed || requestId != _loadRequestId) return;
 
-      emit(state.copyWith(
-        isLoading: false,
-        error: 'تعذر تحميل أوجه القراءة المعتمدة: $e',
-      ));
+      emit(
+        state.copyWith(
+          isLoading: false,
+          items: items,
+          selectedItemId: items.isEmpty ? null : items.first.id,
+          clearSelection: items.isEmpty,
+          clearError: true,
+        ),
+      );
+    } catch (e) {
+      if (isClosed || requestId != _loadRequestId) return;
+
+      emit(
+        state.copyWith(
+          isLoading: false,
+          error: 'تعذر تحميل أوجه القراءة المعتمدة: $e',
+        ),
+      );
     }
   }
 
@@ -106,6 +123,9 @@ class ComparisonCubit extends Cubit<ComparisonState> {
   }
 
   void selectItem(int id) {
+    final exists = state.items.any((item) => item.id == id);
+    if (!exists) return;
+
     emit(state.copyWith(selectedItemId: id));
   }
 }

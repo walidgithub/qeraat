@@ -6,17 +6,19 @@ import '../../domain/comparison_item.dart';
 import '../cubit/comparison_cubit.dart';
 
 class ComparisonPage extends StatelessWidget {
-  final bool embedded;
-
   const ComparisonPage({
     super.key,
     this.embedded = false,
   });
 
+  final bool embedded;
+
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Material(
-      color: Theme.of(context).colorScheme.surface,
+      color: theme.colorScheme.surface,
       child: Column(
         children: [
           _buildHeader(context),
@@ -42,7 +44,8 @@ class ComparisonPage extends StatelessWidget {
                   return const _MessageView(
                     icon: Icons.menu_book_outlined,
                     title: 'لم يتم اختيار آية',
-                    message: 'اختر آية من القارئ لعرض أوجه القراءة المعتمدة.',
+                    message:
+                    'اختر آية من المصحف لعرض أوجه القراءة المعتمدة.',
                   );
                 }
 
@@ -51,7 +54,8 @@ class ComparisonPage extends StatelessWidget {
                     icon: Icons.compare_arrows,
                     title: 'لا توجد أوجه معتمدة لهذه الآية',
                     message:
-                    'ستظهر المقارنة هنا بعد إضافة بيانات موثقة ومراجعتها واعتمادها.',
+                    'ستظهر المقارنة هنا بعد إدخال بيانات موثقة '
+                        'ومراجعتها واعتمادها.',
                   );
                 }
 
@@ -65,6 +69,8 @@ class ComparisonPage extends StatelessWidget {
   }
 
   Widget _buildHeader(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Padding(
       padding: const EdgeInsets.symmetric(
         horizontal: 16,
@@ -72,35 +78,49 @@ class ComparisonPage extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(Icons.compare_arrows),
-          const SizedBox(width: 8),
+          Icon(
+            Icons.compare_arrows,
+            color: theme.colorScheme.primary,
+            size: 28,
+          ),
+          const SizedBox(width: 10),
           const Expanded(
             child: Text(
               'مقارنة القراءات',
               style: TextStyle(
-                fontSize: 18,
+                fontSize: 19,
                 fontWeight: FontWeight.bold,
               ),
             ),
           ),
-          BlocBuilder<ComparisonCubit, ComparisonState>(
-            builder: (context, state) {
-              return PopupMenuButton<ComparisonViewMode>(
-                tooltip: 'طريقة العرض',
-                icon: const Icon(Icons.view_agenda_outlined),
-                onSelected: context.read<ComparisonCubit>().setViewMode,
-                itemBuilder: (_) => const [
-                  PopupMenuItem(
-                    value: ComparisonViewMode.table,
-                    child: Text('عرض القائمة'),
-                  ),
-                  PopupMenuItem(
-                    value: ComparisonViewMode.highlighted,
-                    child: Text('عرض التفاصيل'),
-                  ),
-                ],
-              );
+          PopupMenuButton<ComparisonViewMode>(
+            tooltip: 'طريقة العرض',
+            icon: const Icon(Icons.view_agenda_outlined),
+            onSelected: (mode) {
+              context.read<ComparisonCubit>().setViewMode(mode);
             },
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: ComparisonViewMode.table,
+                child: Row(
+                  children: [
+                    Icon(Icons.list_alt),
+                    SizedBox(width: 10),
+                    Text('قائمة الأوجه'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: ComparisonViewMode.highlighted,
+                child: Row(
+                  children: [
+                    Icon(Icons.article_outlined),
+                    SizedBox(width: 10),
+                    Text('تفاصيل الوجه'),
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -109,11 +129,9 @@ class ComparisonPage extends StatelessWidget {
 }
 
 class _ComparisonContent extends StatelessWidget {
-  final ComparisonState state;
+  const _ComparisonContent({required this.state});
 
-  const _ComparisonContent({
-    required this.state,
-  });
+  final ComparisonState state;
 
   @override
   Widget build(BuildContext context) {
@@ -121,96 +139,116 @@ class _ComparisonContent extends StatelessWidget {
       return _ComparisonList(items: state.items);
     }
 
-    final selected = state.items.where(
-          (item) => item.id == state.selectedItemId,
-    );
+    ComparisonItem? selectedItem;
 
-    final item = selected.isNotEmpty
-        ? selected.first
-        : state.items.first;
+    for (final item in state.items) {
+      if (item.id == state.selectedItemId) {
+        selectedItem = item;
+        break;
+      }
+    }
 
-    return _ComparisonDetails(item: item);
+    selectedItem ??= state.items.first;
+
+    return _ComparisonDetails(item: selectedItem);
   }
 }
 
 class _ComparisonList extends StatelessWidget {
-  final List<ComparisonItem> items;
+  const _ComparisonList({required this.items});
 
-  const _ComparisonList({
-    required this.items,
-  });
+  final List<ComparisonItem> items;
 
   @override
   Widget build(BuildContext context) {
-    final cubit = context.read<ComparisonCubit>();
-    final selectedId =
-    context.select((ComparisonCubit c) => c.state.selectedItemId);
+    final theme = Theme.of(context);
+    final selectedId = context.select<ComparisonCubit, int?>(
+          (cubit) => cubit.state.selectedItemId,
+    );
 
     return ListView.separated(
       padding: const EdgeInsets.all(12),
       itemCount: items.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 8),
+      separatorBuilder: (_, __) => const SizedBox(height: 10),
       itemBuilder: (context, index) {
         final item = items[index];
-        final selected = item.id == selectedId;
+        final isSelected = item.id == selectedId;
 
         return Card(
+          elevation: isSelected ? 2 : 0,
+          color: isSelected
+              ? theme.colorScheme.primaryContainer
+              : theme.colorScheme.surfaceContainerLow,
           clipBehavior: Clip.antiAlias,
           child: InkWell(
             onTap: () {
+              final cubit = context.read<ComparisonCubit>();
               cubit.selectItem(item.id);
               cubit.setViewMode(ComparisonViewMode.highlighted);
             },
             child: Padding(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     children: [
+                      CircleAvatar(
+                        radius: 17,
+                        backgroundColor: theme.colorScheme.primary,
+                        foregroundColor: theme.colorScheme.onPrimary,
+                        child: Text('${index + 1}'),
+                      ),
+                      const SizedBox(width: 10),
                       Expanded(
                         child: Text(
-                          item.qariName ?? 'القارئ غير محدد',
-                          style: const TextStyle(
+                          _value(item.qariName, 'القارئ غير محدد'),
+                          style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
-                            fontSize: 16,
                           ),
                         ),
                       ),
-                      if (selected)
-                        const Icon(
-                          Icons.check_circle,
-                          color: Colors.green,
-                        ),
+                      const Icon(Icons.chevron_left),
                     ],
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'الرواية: ${item.riwayahName ?? 'غير محددة'}',
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      _MetadataChip(
+                        icon: Icons.menu_book_outlined,
+                        label: _value(item.riwayahName, 'الرواية غير محددة'),
+                      ),
+                      _MetadataChip(
+                        icon: Icons.route_outlined,
+                        label: _value(item.tariqName, 'الطريق غير محدد'),
+                      ),
+                    ],
                   ),
-                  Text(
-                    'الطريق: ${item.tariqName ?? 'غير محدد'}',
+                  const SizedBox(height: 14),
+                  _SectionLabel(
+                    icon: Icons.format_quote,
+                    title: 'وجه القراءة',
                   ),
-                  const SizedBox(height: 10),
-                  Text(
-                    item.readingText.isEmpty
-                        ? 'لم يُدخل نص وجه القراءة'
-                        : item.readingText,
+                  const SizedBox(height: 6),
+                  Directionality(
                     textDirection: TextDirection.rtl,
-                    style: const TextStyle(
-                      fontSize: 19,
-                      height: 1.8,
-                    ),
-                  ),
-                  if (item.differenceText.isNotEmpty) ...[
-                    const SizedBox(height: 6),
-                    Text(
-                      'موضع الاختلاف: ${item.differenceText}',
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.primary,
-                        fontWeight: FontWeight.w600,
+                    child: SelectableText(
+                      _value(
+                        item.readingText,
+                        'لم يُدخل نص وجه القراءة.',
+                      ),
+                      textAlign: TextAlign.right,
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        height: 1.9,
+                        fontSize: 21,
                       ),
                     ),
+                  ),
+                  if (_hasText(item.differenceText)) ...[
+                    const SizedBox(height: 14),
+                    _DifferencePanel(text: item.differenceText),
                   ],
                 ],
               ),
@@ -223,99 +261,155 @@ class _ComparisonList extends StatelessWidget {
 }
 
 class _ComparisonDetails extends StatelessWidget {
-  final ComparisonItem item;
+  const _ComparisonDetails({required this.item});
 
-  const _ComparisonDetails({
-    required this.item,
-  });
+  final ComparisonItem item;
 
   @override
   Widget build(BuildContext context) {
-    final sourceDetails = <String>[
-      if (item.sourceTitle?.isNotEmpty == true)
-        'الكتاب: ${item.sourceTitle}',
-      if (item.sourceAuthor?.isNotEmpty == true)
-        'المؤلف: ${item.sourceAuthor}',
-      if (item.sourceEdition?.isNotEmpty == true)
-        'الطبعة: ${item.sourceEdition}',
-      if (item.sourcePage?.isNotEmpty == true)
-        'الصفحة أو المرجع: ${item.sourcePage}',
+    final theme = Theme.of(context);
+
+    final sourceDetails = <MapEntry<String, String>>[
+      if (_hasText(item.sourceTitle))
+        MapEntry('الكتاب', item.sourceTitle!),
+      if (_hasText(item.sourceAuthor))
+        MapEntry('المؤلف', item.sourceAuthor!),
+      if (_hasText(item.sourceEdition))
+        MapEntry('الطبعة', item.sourceEdition!),
+      if (_hasText(item.sourcePage))
+        MapEntry('الصفحة أو المرجع', item.sourcePage!),
     ];
 
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        Text(
-          item.qariName ?? 'القارئ غير محدد',
-          style: Theme.of(context).textTheme.titleLarge,
+        Card(
+          elevation: 0,
+          color: theme.colorScheme.surfaceContainerLow,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _value(item.qariName, 'القارئ غير محدد'),
+                  style: theme.textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                _InfoRow(
+                  label: 'الرواية',
+                  value: _value(item.riwayahName, 'غير محددة'),
+                ),
+                _InfoRow(
+                  label: 'الطريق',
+                  value: _value(item.tariqName, 'غير محدد'),
+                ),
+                _InfoRow(
+                  label: 'نوع الاختلاف',
+                  value: _value(item.category, 'غير محدد'),
+                ),
+              ],
+            ),
+          ),
         ),
-        const SizedBox(height: 12),
-        _InfoRow(
-          label: 'الرواية',
-          value: item.riwayahName ?? 'غير محددة',
-        ),
-        _InfoRow(
-          label: 'الطريق',
-          value: item.tariqName ?? 'غير محدد',
-        ),
-        _InfoRow(
-          label: 'نوع الاختلاف',
-          value: item.category ?? 'غير محدد',
-        ),
-        const Divider(height: 28),
-        Text(
-          'وجه القراءة',
-          style: Theme.of(context).textTheme.titleMedium,
+        const SizedBox(height: 16),
+        _SectionLabel(
+          icon: Icons.menu_book,
+          title: 'وجه القراءة',
         ),
         const SizedBox(height: 8),
-        SelectableText(
-          item.readingText.isEmpty
-              ? 'لم يُدخل نص وجه القراءة.'
-              : item.readingText,
-          textDirection: TextDirection.rtl,
-          style: const TextStyle(
-            fontSize: 22,
-            height: 1.9,
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surfaceContainerLow,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: theme.colorScheme.outlineVariant,
+            ),
+          ),
+          child: Directionality(
+            textDirection: TextDirection.rtl,
+            child: SelectableText(
+              _value(
+                item.readingText,
+                'لم يُدخل نص وجه القراءة.',
+              ),
+              textAlign: TextAlign.right,
+              style: theme.textTheme.headlineSmall?.copyWith(
+                height: 2,
+              ),
+            ),
           ),
         ),
-        if (item.differenceText.isNotEmpty) ...[
+        if (_hasText(item.differenceText)) ...[
+          const SizedBox(height: 18),
+          _DifferencePanel(text: item.differenceText),
+        ],
+        if (_hasText(item.explanation)) ...[
           const SizedBox(height: 20),
-          Text(
-            'موضع الاختلاف',
-            style: Theme.of(context).textTheme.titleMedium,
+          _SectionLabel(
+            icon: Icons.lightbulb_outline,
+            title: 'الشرح',
           ),
           const SizedBox(height: 8),
-          SelectableText(
-            item.differenceText,
-            textDirection: TextDirection.rtl,
-            style: const TextStyle(fontSize: 18),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: theme.colorScheme.outlineVariant,
+              ),
+            ),
+            child: Directionality(
+              textDirection: TextDirection.rtl,
+              child: SelectableText(
+                item.explanation,
+                textAlign: TextAlign.right,
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  height: 1.8,
+                ),
+              ),
+            ),
           ),
         ],
-        if (item.explanation.isNotEmpty) ...[
-          const SizedBox(height: 20),
-          Text(
-            'الشرح',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          const SizedBox(height: 8),
-          SelectableText(
-            item.explanation,
-            textDirection: TextDirection.rtl,
-          ),
-        ],
-        const Divider(height: 28),
-        Text(
-          'المصدر',
-          style: Theme.of(context).textTheme.titleMedium,
+        const SizedBox(height: 22),
+        const Divider(),
+        const SizedBox(height: 12),
+        _SectionLabel(
+          icon: Icons.library_books_outlined,
+          title: 'المصدر والتوثيق',
         ),
         const SizedBox(height: 8),
         if (sourceDetails.isEmpty)
-          const Text('لم تُسجل بيانات المصدر لهذا الوجه.')
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 12),
+            child: Text(
+              'لم تُسجل بيانات المصدر لهذا الوجه.',
+              textAlign: TextAlign.right,
+            ),
+          )
         else
-          ...sourceDetails.map(
-                (detail) => Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              child: Text(detail),
+          Card(
+            elevation: 0,
+            color: theme.colorScheme.surfaceContainerLow,
+            child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                children: [
+                  for (var i = 0; i < sourceDetails.length; i++) ...[
+                    _InfoRow(
+                      label: sourceDetails[i].key,
+                      value: sourceDetails[i].value,
+                    ),
+                    if (i < sourceDetails.length - 1)
+                      const Divider(height: 16),
+                  ],
+                ],
+              ),
             ),
           ),
       ],
@@ -323,30 +417,161 @@ class _ComparisonDetails extends StatelessWidget {
   }
 }
 
-class _InfoRow extends StatelessWidget {
-  final String label;
-  final String value;
+class _DifferencePanel extends StatelessWidget {
+  const _DifferencePanel({required this.text});
 
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.tertiaryContainer,
+        borderRadius: BorderRadius.circular(12),
+        border: BorderDirectional(
+          start: BorderSide(
+            color: theme.colorScheme.tertiary,
+            width: 4,
+          ),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.difference_outlined,
+                size: 19,
+                color: theme.colorScheme.onTertiaryContainer,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'موضع الاختلاف',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.onTertiaryContainer,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Directionality(
+            textDirection: TextDirection.rtl,
+            child: SelectableText(
+              text,
+              textAlign: TextAlign.right,
+              style: theme.textTheme.bodyLarge?.copyWith(
+                height: 1.8,
+                color: theme.colorScheme.onTertiaryContainer,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MetadataChip extends StatelessWidget {
+  const _MetadataChip({
+    required this.icon,
+    required this.label,
+  });
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Chip(
+      avatar: Icon(icon, size: 17),
+      label: Text(label),
+      visualDensity: VisualDensity.compact,
+      side: BorderSide.none,
+    );
+  }
+}
+
+class _SectionLabel extends StatelessWidget {
+  const _SectionLabel({
+    required this.icon,
+    required this.title,
+  });
+
+  final IconData icon;
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Row(
+      children: [
+        Icon(
+          icon,
+          color: theme.colorScheme.primary,
+          size: 21,
+        ),
+        const SizedBox(width: 8),
+        Text(
+          title,
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _InfoRow extends StatelessWidget {
   const _InfoRow({
     required this.label,
     required this.value,
   });
 
+  final String label;
+  final String value;
+
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 5),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 95,
+            width: 105,
             child: Text(
               label,
-              style: const TextStyle(fontWeight: FontWeight.w600),
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
           ),
-          Expanded(child: Text(value)),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Directionality(
+              textDirection: TextDirection.rtl,
+              child: SelectableText(
+                value,
+                textAlign: TextAlign.right,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  height: 1.6,
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -354,43 +579,65 @@ class _InfoRow extends StatelessWidget {
 }
 
 class _MessageView extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String message;
-
   const _MessageView({
     required this.icon,
     required this.title,
     required this.message,
   });
 
+  final IconData icon;
+  final String title;
+  final String message;
+
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Center(
       child: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              size: 48,
-              color: Theme.of(context).colorScheme.primary,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              title,
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              message,
-              textAlign: TextAlign.center,
-            ),
-          ],
+        padding: const EdgeInsets.all(28),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 420),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                size: 52,
+                color: theme.colorScheme.primary,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                message,
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  height: 1.7,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
+}
+
+String _value(String? value, String fallback) {
+  if (value == null || value.trim().isEmpty) {
+    return fallback;
+  }
+  return value.trim();
+}
+
+bool _hasText(String? value) {
+  return value != null && value.trim().isNotEmpty;
 }
