@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -23,9 +22,7 @@ class BasairQiraatApp extends StatelessWidget {
     return MultiBlocProvider(
       providers: [
         BlocProvider<ComparisonCubit>(
-          create: (_) => ComparisonCubit(
-            ComparisonRepository(database),
-          ),
+          create: (_) => ComparisonCubit(ComparisonRepository(database)),
         ),
         BlocProvider<MushafReaderCubit>(
           create: (_) => MushafReaderCubit(database)..loadSurahs(),
@@ -37,9 +34,7 @@ class BasairQiraatApp extends StatelessWidget {
         locale: const Locale('ar'),
         theme: ThemeData(
           useMaterial3: true,
-          colorScheme: ColorScheme.fromSeed(
-            seedColor: const Color(0xFF443182),
-          ),
+          colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF443182)),
           appBarTheme: const AppBarTheme(
             backgroundColor: Color(0xFF24143D),
             foregroundColor: Colors.white,
