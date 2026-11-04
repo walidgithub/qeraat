@@ -1,48 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'core/database/app_database.dart';
-import 'features/comparison/data/comparison_repository.dart';
-import 'features/comparison/presentation/cubit/comparison_cubit.dart';
-import 'features/mushaf/presentation/cubit/mushaf_reader_cubit.dart';
-import 'features/mushaf/presentation/pages/mushaf_reader_page.dart';
+import 'features/readings/data/basair_phase1_importer.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(const BasairQiraatApp());
-}
 
-class BasairQiraatApp extends StatelessWidget {
-  const BasairQiraatApp({super.key});
+  // فتح قاعدة البيانات الحالية
+  final db = await AppDatabase.instance.database;
 
-  @override
-  Widget build(BuildContext context) {
-    final database = AppDatabase.instance;
+  // استيراد القراء والرواة
+  final result = await BasairPhase1Importer.importInto(db);
 
-    return MultiBlocProvider(
-      providers: [
-        BlocProvider<ComparisonCubit>(
-          create: (_) => ComparisonCubit(ComparisonRepository(database)),
-        ),
-        BlocProvider<MushafReaderCubit>(
-          create: (_) => MushafReaderCubit(database)..loadSurahs(),
-        ),
-      ],
-      child: MaterialApp(
-        debugShowCheckedModeBanner: false,
-        title: 'بصائر القراءات',
-        locale: const Locale('ar'),
-        theme: ThemeData(
-          useMaterial3: true,
-          colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF443182)),
-          appBarTheme: const AppBarTheme(
-            backgroundColor: Color(0xFF24143D),
-            foregroundColor: Colors.white,
-            centerTitle: true,
-          ),
-        ),
-        home: const MushafReaderPage(),
-      ),
-    );
-  }
+  debugPrint('القراء المضافون: ${result['qurras_added']}');
+  debugPrint('الرواة المضافون: ${result['riwayat_added']}');
+
+  runApp(const MyApp());
 }
