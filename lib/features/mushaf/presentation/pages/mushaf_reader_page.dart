@@ -6,6 +6,7 @@ import '../../../comparison/presentation/cubit/comparison_cubit.dart';
 import '../../../comparison/presentation/pages/comparison_page.dart';
 import '../cubit/mushaf_reader_cubit.dart';
 import '../cubit/mushaf_reader_state.dart';
+import '../../../readings/presentation/pages/readers_page.dart';
 
 const Color _deepPurple = Color(0xFF24143D);
 const Color _purple = Color(0xFF443182);
@@ -43,8 +44,19 @@ class MushafReaderPage extends StatelessWidget {
               ),
             ],
           ),
-          actions: const [
-            QuranImportButton(),
+          actions: [
+            IconButton(
+              tooltip: 'القراء والرواة',
+              icon: const Icon(Icons.people_alt_outlined),
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const ReadersPage(),
+                  ),
+                );
+              },
+            ),
+            const QuranImportButton(),
           ],
         ),
         body: BlocBuilder<MushafReaderCubit, MushafReaderState>(
