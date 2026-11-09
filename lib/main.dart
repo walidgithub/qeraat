@@ -7,6 +7,7 @@ import 'features/comparison/presentation/cubit/comparison_cubit.dart';
 import 'features/mushaf/presentation/cubit/mushaf_reader_cubit.dart';
 import 'features/mushaf/presentation/pages/mushaf_reader_page.dart';
 import 'features/readings/data/basair_sources_importer.dart';
+import 'features/readings/data/basair_asim_turuq_importer.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -28,6 +29,29 @@ Future<void> main() async {
         ? 'تم تسجيل المصدر الرئيسي'
         : 'المصدر الرئيسي مسجل مسبقًا',
   );
+
+
+  final asimData = await db.rawQuery('''
+  SELECT
+    q.id AS qari_id,
+    q.name_ar AS qari_name,
+    r.id AS riwaya_id,
+    r.name_ar AS riwaya_name
+  FROM qurras q
+  INNER JOIN riwayat r ON r.qari_id = q.id
+  WHERE q.name_ar LIKE '%عاصم%'
+  ORDER BY r.id
+''');
+
+  for (final item in asimData) {
+    debugPrint('بيانات عاصم: $item');
+  }
+
+  final turuqResult =
+  await BasairAsimTuruqImporter.import(db);
+
+  debugPrint('الطرق المضافة: ${turuqResult['added']}');
+  debugPrint('الطرق الموجودة مسبقًا: ${turuqResult['existing']}');
 
   runApp(const BasairQiraatApp());
 }

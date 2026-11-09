@@ -37,9 +37,34 @@ class _ReadersPageState extends State<ReadersPage> {
         orderBy: 'id ASC',
       );
 
+      final narratorsWithTuruq = <Map<String, dynamic>>[];
+
+      for (final narrator in narrators) {
+        final turuq = await db.rawQuery(
+          '''
+          SELECT
+            turuq.id,
+            turuq.name_ar,
+            turuq.source_id,
+            sources.title AS source_title
+          FROM turuq
+          LEFT JOIN sources
+            ON sources.id = turuq.source_id
+          WHERE turuq.riwaya_id = ?
+          ORDER BY turuq.id ASC
+          ''',
+          [narrator['id']],
+        );
+
+        narratorsWithTuruq.add({
+          ...narrator,
+          'turuq': turuq,
+        });
+      }
+
       result.add({
         ...reader,
-        'narrators': narrators,
+        'narrators': narratorsWithTuruq,
       });
     }
 
@@ -63,7 +88,10 @@ class _ReadersPageState extends State<ReadersPage> {
 
           if (snapshot.hasError) {
             return Center(
-              child: Text('حدث خطأ: ${snapshot.error}'),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text('حدث خطأ: ${snapshot.error}'),
+              ),
             );
           }
 
@@ -80,6 +108,7 @@ class _ReadersPageState extends State<ReadersPage> {
             itemCount: readers.length,
             itemBuilder: (context, index) {
               final reader = readers[index];
+
               final narrators =
               reader['narrators'] as List<Map<String, dynamic>>;
 
@@ -99,9 +128,67 @@ class _ReadersPageState extends State<ReadersPage> {
                   ),
                   subtitle: Text('عدد الروايات: ${narrators.length}'),
                   children: narrators.map((narrator) {
-                    return ListTile(
+                    final turuq =
+                    narrator['turuq'] as List<Map<String, dynamic>>;
+
+                    return ExpansionTile(
+                      tilePadding: const EdgeInsetsDirectional.only(
+                        start: 32,
+                        end: 16,
+                      ),
                       leading: const Icon(Icons.menu_book),
-                      title: Text(narrator['name_ar']?.toString() ?? ''),
+                      title: Text(
+                        narrator['name_ar']?.toString() ?? '',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      subtitle: Text('عدد الطرق الرئيسية: ${turuq.length}'),
+                      children: [
+                        if (turuq.isEmpty)
+                          const Padding(
+                            padding: EdgeInsets.all(12),
+                            child: Text(
+                              'لم تتم إضافة طرق لهذه الرواية بعد',
+                              style: TextStyle(color: Colors.grey),
+                            ),
+                          ),
+
+                        ...turuq.map((tariq) {
+                          final name =
+                              tariq['name_ar']?.toString() ?? '';
+
+                          final displayName = name.replaceAllMapped(
+                            RegExp(r'(\d+)\s*-\s*(\d+)'),
+                                (match) => '\u200E${match.group(1)}–${match.group(2)}\u200E',
+                          );
+
+                          final source =
+                          tariq['source_title']?.toString();
+
+                          return ListTile(
+                            contentPadding:
+                            const EdgeInsetsDirectional.only(
+                              start: 64,
+                              end: 16,
+                            ),
+                            leading: const Icon(
+                              Icons.subdirectory_arrow_left,
+                              color: Colors.deepPurple,
+                            ),
+                            title: Text(
+                              displayName,
+                              style: const TextStyle(fontSize: 14),
+                            ),
+                            subtitle: source == null
+                                ? null
+                                : Text(
+                              'المصدر: $source',
+                              style: const TextStyle(fontSize: 12),
+                            ),
+                          );
+                        }),
+                      ],
                     );
                   }).toList(),
                 ),
