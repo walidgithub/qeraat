@@ -510,7 +510,7 @@ class _SurahContentState extends State<_SurahContent> {
           const Center(
             child: Text(
               'بِسْمِ اللَّهِ الرَّحْمَـٰنِ الرَّحِيمِ',
-              textDirection: TextDirection.rtl,
+              textDirection: TextDirection.ltr,
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontFamily: 'Amiri',
@@ -523,7 +523,7 @@ class _SurahContentState extends State<_SurahContent> {
         ],
 
         Directionality(
-          textDirection: TextDirection.rtl,
+          textDirection: TextDirection.ltr,
           child: Container(
             width: double.infinity,
             padding: const EdgeInsets.all(18),
@@ -541,7 +541,7 @@ class _SurahContentState extends State<_SurahContent> {
                 children: spans,
               ),
               textAlign: TextAlign.right,
-              textDirection: TextDirection.rtl,
+              textDirection: TextDirection.ltr,
             ),
           ),
         ),

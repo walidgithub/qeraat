@@ -17,13 +17,21 @@ class AppDatabase {
 
     _database = await openDatabase(
       path,
-      version: 1,
+      version: 2,
+
       onConfigure: (db) async {
         await db.execute('PRAGMA foreign_keys = ON');
       },
+
       onCreate: (db, version) async {
         await _createTables(db);
         await _insertDemoData(db);
+      },
+
+      onUpgrade: (db, oldVersion, newVersion) async {
+        if (oldVersion < 2) {
+          await _createTariqNodesTable(db);
+        }
       },
     );
 
@@ -89,6 +97,9 @@ class AppDatabase {
       )
     ''');
 
+    // جدول الفروع المتدرجة للطرق
+    await _createTariqNodesTable(db);
+
     await db.execute('''
       CREATE TABLE reading_variants (
         id INTEGER PRIMARY KEY,
@@ -152,6 +163,55 @@ class AppDatabase {
     ''');
   }
 
+  Future<void> _createTariqNodesTable(DatabaseExecutor db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS tariq_nodes (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+        turuq_id INTEGER NOT NULL,
+
+        parent_id INTEGER,
+
+        name_ar TEXT NOT NULL,
+
+        node_type TEXT NOT NULL DEFAULT 'branch',
+
+        source_id INTEGER,
+
+        volume INTEGER,
+
+        page_start INTEGER,
+
+        page_end INTEGER,
+
+        sort_order INTEGER NOT NULL DEFAULT 0,
+
+        review_status TEXT NOT NULL DEFAULT 'pending',
+
+        notes TEXT,
+
+        FOREIGN KEY(turuq_id)
+          REFERENCES turuq(id),
+
+        FOREIGN KEY(parent_id)
+          REFERENCES tariq_nodes(id),
+
+        FOREIGN KEY(source_id)
+          REFERENCES sources(id)
+      )
+    ''');
+
+    await db.execute('''
+      CREATE INDEX IF NOT EXISTS idx_tariq_nodes_turuq
+      ON tariq_nodes(turuq_id)
+    ''');
+
+    await db.execute('''
+      CREATE INDEX IF NOT EXISTS idx_tariq_nodes_parent
+      ON tariq_nodes(parent_id)
+    ''');
+  }
+
   Future<void> _insertDemoData(DatabaseExecutor db) async {
     await db.insert('demo_comparison_items', {
       'id': 1,
@@ -172,6 +232,10 @@ class AppDatabase {
 
   Future<List<Map<String, Object?>>> getDemoItems() async {
     final db = await database;
-    return db.query('demo_comparison_items', orderBy: 'id ASC');
+
+    return db.query(
+      'demo_comparison_items',
+      orderBy: 'id ASC',
+    );
   }
 }

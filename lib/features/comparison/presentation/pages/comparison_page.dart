@@ -233,7 +233,7 @@ class _ComparisonList extends StatelessWidget {
                   ),
                   const SizedBox(height: 6),
                   Directionality(
-                    textDirection: TextDirection.rtl,
+                    textDirection: TextDirection.ltr,
                     child: SelectableText(
                       _value(
                         item.readingText,
@@ -331,7 +331,7 @@ class _ComparisonDetails extends StatelessWidget {
             ),
           ),
           child: Directionality(
-            textDirection: TextDirection.rtl,
+            textDirection: TextDirection.ltr,
             child: SelectableText(
               _value(
                 item.readingText,
@@ -365,7 +365,7 @@ class _ComparisonDetails extends StatelessWidget {
               ),
             ),
             child: Directionality(
-              textDirection: TextDirection.rtl,
+              textDirection: TextDirection.ltr,
               child: SelectableText(
                 item.explanation,
                 textAlign: TextAlign.right,
@@ -463,7 +463,7 @@ class _DifferencePanel extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Directionality(
-            textDirection: TextDirection.rtl,
+            textDirection: TextDirection.ltr,
             child: SelectableText(
               text,
               textAlign: TextAlign.right,
@@ -561,7 +561,7 @@ class _InfoRow extends StatelessWidget {
           const SizedBox(width: 8),
           Expanded(
             child: Directionality(
-              textDirection: TextDirection.rtl,
+              textDirection: TextDirection.ltr,
               child: SelectableText(
                 value,
                 textAlign: TextAlign.right,

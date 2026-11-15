@@ -8,6 +8,7 @@ import 'features/mushaf/presentation/cubit/mushaf_reader_cubit.dart';
 import 'features/mushaf/presentation/pages/mushaf_reader_page.dart';
 import 'features/readings/data/basair_sources_importer.dart';
 import 'features/readings/data/basair_asim_turuq_importer.dart';
+import 'features/readings/data/basair_shuba_yahya_importer.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -52,6 +53,23 @@ Future<void> main() async {
 
   debugPrint('الطرق المضافة: ${turuqResult['added']}');
   debugPrint('الطرق الموجودة مسبقًا: ${turuqResult['existing']}');
+
+  final tables = await db.rawQuery(
+      "SELECT name FROM sqlite_master "
+          "WHERE type = 'table' AND name = 'tariq_nodes'"
+  );
+
+  debugPrint('جدول فروع الطرق: ${tables.isNotEmpty ? 'موجود' : 'غير موجود'}');
+
+  final turuq = await db.query('turuq');
+
+  debugPrint('عدد الطرق الحالية: ${turuq.length}');
+
+  final shubaResult =
+  await BasairShubaYahyaImporter.import(db);
+
+  debugPrint('فروع شعبة المضافة: ${shubaResult['added']}');
+  debugPrint('فروع شعبة الموجودة: ${shubaResult['existing']}');
 
   runApp(const BasairQiraatApp());
 }
