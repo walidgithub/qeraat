@@ -1,4 +1,3 @@
-
 import 'package:sqflite/sqflite.dart';
 
 class BasairShubaYahyaImporter {
@@ -210,6 +209,72 @@ class BasairShubaYahyaImporter {
         shuaibRouteIds[name] = id;
       }
 
+      // =====================================================
+      // تفصيل طريق المثلثي عن شعيب بن أيوب.
+      // النشر: الجزء الأول، ص 147.
+      // تضاف الفروع تحت العقدة الموجودة دون تكرار.
+      // =====================================================
+
+      final mathlathiId = shuaibRouteIds['طريق المثلثي']!;
+
+      final mathlathiDetails = [
+        {
+          'name': 'طريق كتاب الموضح لابن خيرون',
+          'notes':
+          'من كتاب الموضح لأبي منصور بن خيرون. '
+              'ذكر ضمن مصادر طريق المثلثي. النشر ج1 ص147.',
+        },
+        {
+          'name': 'طريق كتاب المفتاح لابن خيرون',
+          'notes':
+          'من كتاب المفتاح لأبي منصور بن خيرون. '
+              'ذكر ضمن مصادر طريق المثلثي. النشر ج1 ص147.',
+        },
+        {
+          'name': 'طريق مصباح أبي الكرم عن عبد السيد',
+          'notes':
+          'من مصباح أبي الكرم، قرأ بها على عبد السيد بن عتاب، '
+              'وقرأ بها عبد السيد على القاضي أبي العلاء الواسطي، '
+              'ثم على أبي علي أحمد بن علي بن البصري الواسطي. '
+              'النشر ج1 ص147.',
+        },
+        {
+          'name': 'طريق سبط الخياط عن ثابت بن بندار',
+          'notes':
+          'بالإسناد المتقدم إلى سبط الخياط، قرأ بها على أبي المعالي '
+              'ثابت بن بندار. النشر ج1 ص147.',
+        },
+        {
+          'name': 'طريق عبد السيد وثابت إلى أبي الفتح',
+          'notes':
+          'من مصباح أبي الكرم، عن عبد السيد بن عتاب وثابت بن بندار، '
+              'وقرآ بها على أبي الفتح فرج بن عمر بن الحسن البصري المفسر، '
+              'ثم على القاضي أبي الحسن علي بن أحمد بن العريف الجامدي. '
+              'النشر ج1 ص147.',
+        },
+        {
+          'name': 'طريق ثابت بن بندار إلى الجامدي',
+          'notes':
+          'من مصباح أبي الكرم، عن ثابت بن بندار، '
+              'إلى أبي الفتح فرج بن عمر، ثم القاضي أبي الحسن الجامدي. '
+              'النشر ج1 ص147.',
+        },
+      ];
+
+      for (var i = 0; i < mathlathiDetails.length; i++) {
+        final detail = mathlathiDetails[i];
+
+        await ensureNode(
+          parentId: mathlathiId,
+          name: detail['name']!,
+          type: 'route',
+          pageStart: 147,
+          pageEnd: 147,
+          sortOrder: i + 1,
+          notes: detail['notes'],
+        );
+      }
+
       // تفصيل الطرق الستة المذكورة تحت طريق الأصم.
       final asammId = shuaibRouteIds['طريق الأصم']!;
 
@@ -314,4 +379,149 @@ class BasairShubaYahyaImporter {
       };
     });
   }
+
+  static Future<void> debugPrintShubaYahyaTree(
+      Database db,
+      ) async {
+    final rows = await db.rawQuery('''
+    SELECT
+      id,
+      turuq_id,
+      parent_id,
+      name_ar,
+      node_type,
+      review_status,
+      sort_order,
+      page_start,
+      page_end,
+      notes
+    FROM tariq_nodes
+    ORDER BY turuq_id, parent_id, sort_order, id
+  ''');
+
+    for (final row in rows) {
+      print(
+        'TREE: '
+            'id=${row['id']} | '
+            'turuq=${row['turuq_id']} | '
+            'parent=${row['parent_id']} | '
+            'name=${row['name_ar']} | '
+            'type=${row['node_type']} | '
+            'status=${row['review_status']} | '
+            'sort=${row['sort_order']} | '
+            'pages=${row['page_start']}-${row['page_end']} | '
+            'notes=${row['notes']}',
+      );
+    }
+  }
+
+
+  static Future<void> importQaffalayiDetails(Database db) async {
+    const rootName = 'شعيب بن أيوب عن يحيى بن آدم';
+    const routeName = 'طريق القافلائي';
+
+    final details = [
+      {
+        'name': 'طريق التيسير',
+        'notes': 'من كتاب التيسير، قرأ بها الداني على فارس. النشر ج1 ص147.',
+      },
+      {
+        'name': 'طريق الشاطبية',
+        'notes': 'من طريق الشاطبية، وذكرها ابن الجزري مع التيسير عن فارس. النشر ج1 ص147.',
+      },
+      {
+        'name': 'طريق التجريد',
+        'notes': 'من كتاب التجريد، قرأ بها ابن الفحام على عبد الباقي بن فارس، وقرأ عبد الباقي على أبيه فارس. النشر ج1 ص147.',
+      },
+      {
+        'name': 'طريق التلخيص',
+        'notes': 'من كتاب التلخيص، قرأ بها ابن بليمة على عبد الباقي بن فارس، وقرأ عبد الباقي على أبيه فارس. النشر ج1 ص147.',
+      },
+      {
+        'name': 'طريق العنوان',
+        'notes': 'من كتاب العنوان، قرأ بها أبو طاهر على عبد الجبار الطرسوسي. النشر ج1 ص147.',
+      },
+      {
+        'name': 'طريق المجتبى',
+        'notes': 'من كتاب المجتبى للطرسوسي. النشر ج1 ص147.',
+      },
+      {
+        'name': 'طريق الكافي',
+        'notes': 'من كتاب الكافي، قرأ بها ابن شريح. النشر ج1 ص147.',
+      },
+      {
+        'name': 'طريق روضة المعدل',
+        'notes': 'من روضة المعدل، وذكر ابن الجزري القراءة بها على ابن نفيس. النشر ج1 ص147.',
+      },
+    ];
+
+    await db.transaction((txn) async {
+      final roots = await txn.query(
+        'tariq_nodes',
+        where: 'turuq_id = ? AND parent_id IS NULL AND name_ar = ?',
+        whereArgs: [1, rootName],
+        limit: 1,
+      );
+
+      if (roots.isEmpty) {
+        throw Exception('لم يتم العثور على أصل شعيب عن يحيى بن آدم');
+      }
+
+      final rootId = roots.first['id'];
+
+      final parents = await txn.query(
+        'tariq_nodes',
+        where: 'turuq_id = ? AND parent_id = ? AND name_ar = ?',
+        whereArgs: [1, rootId, routeName],
+        limit: 1,
+      );
+
+      if (parents.isEmpty) {
+        throw Exception('لم يتم العثور على طريق القافلائي');
+      }
+
+      final parent = parents.first;
+      final parentId = parent['id'];
+      final sourceId = parent['source_id'];
+
+      int added = 0;
+      int existing = 0;
+
+      for (int i = 0; i < details.length; i++) {
+        final item = details[i];
+
+        final found = await txn.query(
+          'tariq_nodes',
+          where: 'turuq_id = ? AND parent_id = ? AND name_ar = ?',
+          whereArgs: [1, parentId, item['name']],
+          limit: 1,
+        );
+
+        if (found.isNotEmpty) {
+          existing++;
+          continue;
+        }
+
+        await txn.insert('tariq_nodes', {
+          'turuq_id': 1,
+          'parent_id': parentId,
+          'name_ar': item['name'],
+          'node_type': 'route',
+          'source_id': sourceId,
+          'volume': 1,
+          'page_start': 147,
+          'page_end': 147,
+          'sort_order': i + 1,
+          'review_status': 'pending',
+          'notes': item['notes'],
+        });
+
+        added++;
+      }
+
+      print('تفاصيل القافلائي المضافة: $added');
+      print('تفاصيل القافلائي الموجودة: $existing');
+    });
+  }
+
 }

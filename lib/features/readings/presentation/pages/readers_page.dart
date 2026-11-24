@@ -150,16 +150,93 @@ class _ReadersPageState extends State<ReadersPage> {
     }
 
     if (start != null && end != null) {
-      parts.add(
-        'ص${start == end ? start : '$start–$end'}',
-      );
+      final pageText = start == end
+          ? '$start'
+          : '$start–$end';
+      parts.add('ص$pageText');
     } else if (start != null) {
       parts.add('ص$start');
     } else if (end != null) {
       parts.add('ص$end');
     }
 
-    return parts.join(' - ');
+    return parts.join(' • ');
+  }
+
+  // عرض النص العربي مع عزل نطاق الصفحات في عنصر مستقل باتجاه LTR.
+  // هذا أكثر موثوقية من إدراج علامات Unicode للاتجاه داخل String.
+  Widget _directionalText(
+      String value, {
+        required TextStyle style,
+        int? maxLines,
+      }) {
+    final rangePattern = RegExp(r'\d+\s*[-–]\s*\d+');
+    final spans = <InlineSpan>[];
+    var lastIndex = 0;
+
+    for (final match in rangePattern.allMatches(value)) {
+      if (match.start > lastIndex) {
+        spans.add(TextSpan(text: value.substring(lastIndex, match.start)));
+      }
+
+      final range = match.group(0)!.replaceAll('-', '–').replaceAll(' ', '');
+      spans.add(
+        WidgetSpan(
+          alignment: PlaceholderAlignment.baseline,
+          baseline: TextBaseline.alphabetic,
+          child: Directionality(
+            textDirection: TextDirection.ltr,
+            child: Text(
+              range,
+              style: style,
+              maxLines: 1,
+              softWrap: false,
+            ),
+          ),
+        ),
+      );
+      lastIndex = match.end;
+    }
+
+    if (lastIndex < value.length) {
+      spans.add(TextSpan(text: value.substring(lastIndex)));
+    }
+
+    return Text.rich(
+      TextSpan(children: spans),
+      textDirection: TextDirection.rtl,
+      style: style,
+      maxLines: maxLines,
+    );
+  }
+
+  // شارة صغيرة لعرض بيانات المصدر وحالة المراجعة بصورة مرتبة.
+  Widget _metadataChip(
+      String text, {
+        Color? color,
+        bool ltr = false,
+      }) {
+    final chipTextStyle = TextStyle(
+      fontSize: 11,
+      color: color ?? Colors.grey.shade700,
+    );
+    final child = _directionalText(
+      text,
+      style: chipTextStyle,
+      maxLines: 2,
+    );
+
+    return Container(
+      margin: const EdgeInsetsDirectional.only(end: 6, bottom: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: (color ?? Colors.grey).withOpacity(0.08),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: ltr
+          ? Directionality(textDirection: TextDirection.ltr, child: child)
+          : child,
+    );
   }
 
   // بناء كل مستوى من مستويات الشجرة بصورة تكرارية.
@@ -175,12 +252,6 @@ class _ReadersPageState extends State<ReadersPage> {
     final source = node['source_title']?.toString();
     final notes = node['notes']?.toString();
 
-    final metadata = <String>[
-      _pageReference(node),
-      if (source != null && source.isNotEmpty) source,
-      _reviewStatus(status),
-    ];
-
     return ExpansionTile(
       key: PageStorageKey('tariq_node_$id'),
       tilePadding: EdgeInsetsDirectional.only(
@@ -193,7 +264,7 @@ class _ReadersPageState extends State<ReadersPage> {
             : Icons.account_tree_outlined,
         color: Colors.deepPurple,
       ),
-      title: Text(
+      title: _directionalText(
         node['name_ar']?.toString() ?? '',
         style: const TextStyle(
           fontSize: 14,
@@ -203,20 +274,28 @@ class _ReadersPageState extends State<ReadersPage> {
       subtitle: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(height: 4),
-          Text(
-            metadata.join(' • '),
-            style: TextStyle(
-              fontSize: 11,
-              color: _reviewColor(status),
-            ),
+          const SizedBox(height: 6),
+          Wrap(
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              _metadataChip(_pageReference(node)),
+              if (source != null && source.isNotEmpty)
+                _metadataChip(source),
+              _metadataChip(
+                _reviewStatus(status),
+                color: _reviewColor(status),
+              ),
+            ],
           ),
           if (notes != null && notes.isNotEmpty)
             Padding(
-              padding: const EdgeInsets.only(top: 4),
-              child: Text(
+              padding: const EdgeInsets.only(top: 6),
+              child: _directionalText(
                 notes,
-                style: const TextStyle(fontSize: 11),
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
             ),
         ],
@@ -256,7 +335,7 @@ class _ReadersPageState extends State<ReadersPage> {
         Icons.route,
         color: Colors.deepPurple,
       ),
-      title: Text(
+      title: _directionalText(
         tariq['name_ar']?.toString() ?? '',
         style: const TextStyle(
           fontSize: 14,
